@@ -1,0 +1,13 @@
+name: merge-preview
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+concurrency:
+  group: merge-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  verdict:
+    uses: akira-toriyama/glyph/.github/workflows/pr-verdict.yml@v6.1.0

@@ -1,0 +1,11 @@
+name: commit-lint
+on:
+  pull_request:
+  push:
+    branches: [main]  # optional — annotates direct pushes, never fails them
+permissions:
+  contents: read
+  pull-requests: read  # the squash-title lint reads GET /pulls/{n}
+jobs:
+  lint:
+    uses: akira-toriyama/glyph/.github/workflows/lint.yml@v6.1.0

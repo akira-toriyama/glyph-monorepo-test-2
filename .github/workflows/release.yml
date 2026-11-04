@@ -1,0 +1,40 @@
+name: release
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run: { description: "Preview only", type: boolean, default: false }
+concurrency: { group: release, cancel-in-progress: false }
+permissions:
+  contents: write
+jobs:
+  release:
+    uses: akira-toriyama/glyph/.github/workflows/release.yml@v6.1.0
+    with:
+      dry-run: ${{ github.event.inputs.dry_run == 'true' }}
+      install-notes: |
+        ## Install
+
+        Each line is its own Go module or document; fetch the one this draft names.
+  attach:
+    needs: release
+    if: needs.release.outputs.packages != '' && github.event.inputs.dry_run != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PACKAGES: ${{ needs.release.outputs.packages }}
+    steps:
+      - name: show the packages output
+        run: printf '%s\n' "$PACKAGES" | jq .
+      - name: attach one file to each line's draft
+        run: |
+          printf '%s\n' "$PACKAGES" | jq -r '.[] | select(.tag != null) | .tag' | while read -r tag; do
+            f="manifest-$(printf '%s' "$tag" | tr '/' '-').txt"
+            printf 'line draft %s built from %s\n' "$tag" "$GITHUB_SHA" > "$f"
+            gh release upload "$tag" "$f" --clobber
+            echo "uploaded $f to $tag"
+          done
